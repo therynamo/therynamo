@@ -10,7 +10,7 @@ const config = {
   tagline: '',
   url: 'https://therynamo.dev',
   baseUrl: '/',
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
 
