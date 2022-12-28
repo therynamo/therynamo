@@ -15,13 +15,14 @@ export default function Home() {
           padding: "12px",
         }}
       >
-        <div>
-          <h1 className={styles.name}>Theryn</h1>
-          <p className={styles.labels}>Dad</p>
-          <p className={styles.labels}>Software Engineer</p>
-          <p className={styles.labels}>Aspiring Horticulturist</p>
+        <div className="container">
+          <h1 className="hero__title">Theryn</h1>
+          <p className="hero__subtitle">
+            Dad · Software Engineer · Aspiring Horticulturist
+          </p>
         </div>
-        <div>
+
+        <div className="container">
           <p className={styles.intro}>Hey. I do things!</p>
         </div>
       </div>
