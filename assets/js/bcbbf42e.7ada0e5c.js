@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunktherynamo=self.webpackChunktherynamo||[]).push([[606],{6090:e=>{e.exports=JSON.parse('{"label":"typescript","permalink":"/blog/tags/typescript","allTagsPath":"/blog/tags","count":1}')}}]);

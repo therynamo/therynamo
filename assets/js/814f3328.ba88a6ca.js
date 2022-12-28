@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunktherynamo=self.webpackChunktherynamo||[]).push([[535],{5641:e=>{e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"\ud83c\udf3f A Quest for Happy Plants","permalink":"/blog/happy-plants"}]}')}}]);
