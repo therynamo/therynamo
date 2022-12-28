@@ -1,0 +1,367 @@
+---
+authors: me
+slug: happy-plants
+title: 🌿 A Quest for Happy Plants
+tags: ["typescript", "node", "raspberry pi", "automation"]
+---
+
+import { InlineBlogImage } from "../../src/components/Image/InlineBlogImage";
+
+:::tip Origination
+This article is also available on [Dev.to](https://dev.to/therynamo/a-quest-for-happy-plants-with-iot-14p1) where it was originally posted.
+:::
+
+Automating things has always been fascinating even when practicality is thrown out the window. It is incredible what you can do with just a little elbow grease.
+
+I recently started tending to plants in my time at home over the last year. Most of which ended up being vegetables. During that time I've done a lot of reading about how to make my plants happy. One thing I know for sure, is even after a year of constant tending, I know nothing 😁. But that is the beauty of it, there is always something more to learn!
+
+In my quest to make my plants happy, I came across myriad posts, articles, comments, etc. Each of which outlined many environmental specificities you must follow to give your plants the lives they deserve. And though plants (in our case vegetables) are resilient outside, once you bring them inside or use a different medium than soil (hydroponics) they become quite needy.
+
+There are many factors that determine a quality environment for your plants. One of the keywords that kept coming up in my quest for the most joyful plants in the world was ["room humidity"](https://en.wikipedia.org/wiki/Humidity) (RH). According to Wikipedia, 30-50% humidity is a "normal" range for an average household. Our vegetables, however, like that humidity a little higher so they can breathe. In order to simulate a healthy growing environment for vegetation, we can shoot for ~70-75% RH. And that is what this post is going to focus on.
+
+How to set up, track, and measure the temperature and room humidity of your space.
+
+# Part List
+
+I chose to use cheap-ish materials, but I'm positive you could find a way to do this far cheaper than what I've got here.
+
+- [Raspberry Pi 4 Model B](https://www.raspberrypi.org/products/raspberry-pi-4-model-b/)
+- [200GB Sandisk MicroSD](https://www.amazon.com/gp/product/B08HCHS64Y/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1)
+- [DHT11 Temp/Humidity Sensor](https://www.amazon.com/gp/product/B07WT2HJ4F/ref=ppx_yo_dt_b_asin_title_o06_s00?ie=UTF8&psc=1)
+
+That's it! That is all you need to get up and running for this post.
+
+# Getting Started
+
+Thankfully, there are many smart people out there on the internet with multiple tutorials on how to set up Raspbian on a Raspberry Pi. [Here is one such article from the folks over at MagPi](https://magpi.raspberrypi.org/articles/set-up-raspberry-pi-4) (there are many more, but this will be outside of what I'm covering here).
+
+Once you've done that you'll want to enable SSH so you can develop remotely. [Here is a quick how to](https://www.raspberrypi.org/documentation/remote-access/ssh/) on that.
+
+Once you've got your RPi set up, you'll want to get all of your tools installed.
+
+## Tech Stack
+
+**On the RPi**
+
+- Node.js
+  - TypeScript
+- InfluxDB
+- Grafana
+
+**Locally**
+
+- VSCode
+- Any terminal ([iTerm](https://iterm2.com/) is great)
+
+## Node/Yarn
+
+I used [this article from Joshua Carter](https://morioh.com/p/95521373ce3d) to set up Node/Yarn.
+
+_Note_ I used the latest LTS version of node, which meant swapping out `12.X` for `14.X` in the first `cURL` command.
+
+## Influx/Grafana
+
+I followed a [great tutorial from Simon Hearne](https://simonhearne.com/2020/pi-influx-grafana/) on setting up Influx v1.X with Grafana.
+
+_Note_: If you want to run v2.X of InfluxDB, you'll need to be running a 64bit OS on your RPI. [More about that here](https://community.influxdata.com/t/trying-to-install-influxdb-2-0-beta-on-raspberry-pi-4b-w-4gb-ram/13153).
+
+## VSCode
+
+You can run VSCode on your Raspberry Pi, and it may work great for you! I however, bought the 1GB RAM version of the RPi 4 Model B. Between `yarn install` and trying to write in VSCode, I ended up locking up my RPi.
+
+So I thought, there has to be a better way to do this.
+
+> VSCode has entered the chat...
+
+Remember when, what may feel like an eternity ago, we enabled SSH on our RPi? Well it turns out VSCode [has the ability for us to write code remotely using SSH](https://code.visualstudio.com/learn/develop-cloud/ssh-lab-machines). This is the part of the project where I got all giddy. I am not a big fan of setting all of the intricate little pieces up. Where I start to see the possibilities and excitement is once I can write some code.
+
+---
+
+Once you've got all of the pieces assembled, you can start to look at putting the sensor on, and getting Node communicating with it.
+
+For this next part, I liked to SSH into my RPi and do any `yarn` commands through the terminal on my remote machine. Any code written I would write in the VSCode enabled with SSH.
+
+# Code with Node
+
+Here is my `package.json` so you can get a view of what dependencies you'll be adding.
+
+```json title="package.json"
+{
+  "scripts": {
+    "start": "NODE_OPTIONS=--max_old_space_size=1000 TS_NODE_FILES=src/* nodemon src/index.ts -e ts",
+    "build": "tsc",
+    "vroom": "yarn build && NODE_OPTIONS=--max_old_space_size=1000 ./dist/src/index.js"
+  },
+  "devDependencies": {
+    "@types/node-dht-sensor": "^0.4.0",
+    "@typescript-eslint/eslint-plugin": "^4.18.0",
+    "@typescript-eslint/parser": "^4.18.0",
+    "eslint": "^7.22.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-jest": "^24.3.2",
+    "eslint-plugin-node": "^11.1.0",
+    "nodemon": "^2.0.7",
+    "prettier": "^2.2.1",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.3"
+  },
+  "dependencies": {
+    "influx": "^5.8.0",
+    "node-dht-sensor": "^0.4.3"
+  }
+}
+```
+
+## TypeScript
+
+I've recently become quite the TypeScript convert, so much so that I refuse to start a project without it. If you don't like TypeScript, or don't want to use it, feel free to skip to the next section.
+
+### Quick Start
+
+```bash
+yarn add -D typescript @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint eslint-config-prettier eslint-plugin-jest eslint-plugin-node nodemon prettier ts-node
+```
+
+From here you can run `tsc --init` or you can copy my `tsconfig.json` below. (This will live at the root of your project directory)
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true
+  }
+}
+```
+
+_Note_: you don't need the following, they are just nice to have for any _JS/TS_ project to keep your code clean.
+
+**Eslint**
+
+We can add two files to our root that give us a quick Eslint setup.
+
+```js title=".eslintrc.js"
+module.exports = {
+  root: true,
+  parser: "@typescript-eslint/parser",
+
+  parserOptions: {
+    ecmaVersion: 2020,
+  },
+  plugins: ["@typescript-eslint", "jest"],
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:jest/recommended",
+    "plugin:node/recommended",
+    "prettier",
+  ],
+};
+```
+
+```yml title=".eslintignore"
+# don't ever lint node_modules
+node_modules
+# don't lint build output (make sure it's set to your correct build folder name)
+dist
+# don't lint nyc coverage output
+coverage
+```
+
+**Prettier**
+
+```js title=".prettierrc.js"
+module.exports = {
+  printWidth: 100,
+  singleQuote: true,
+  trailingComma: "es5",
+};
+```
+
+```yaml title=".prettierignore"
+build
+coverage
+dist
+```
+
+Et Voila! We are all set and ready to go!
+
+## Project Dependencies
+
+The meaty bits:
+
+```bash
+yarn add influx node-dht-sensor
+```
+
+The explanation bits:
+
+As you can see, we only have two dependencies: `influx` and `node-dht-sensor"`. You might be thinking, wait... I thought [Johnny Five](http://johnny-five.io/) was the go-to Node library for IoT. Well, you're not wrong! In fact, that is where this project started. It turns out, Johnny Five's examples only have the DHT11 sensors [with a backpack](http://johnny-five.io/examples/temperature-DHT11_I2C_NANO_BACKPACK/). Now, I'm sure with some clever coding, and further understanding of GPIO and how Johnny Five interacts with them, you could definitely get "J5" to play nicely. That being said, we want EASY not difficult 😅.
+
+So how are we going to talk to the DHT11 sensor from Node? [`node-dht-sensor`](https://github.com/momenso/node-dht-sensor) to the rescue. After some quick searching, it turns out, someone else has also had this problem (imagine that 😄). On their [`README`](https://github.com/momenso/node-dht-sensor#first-example), you'll find a helpful diagram for connecting your RPi and the sensor. From there, we can start writing some code!
+
+_Note_: I chose the same pins that their diagram shows and it worked great.
+
+[RPi GPIO Pin Diagram](https://www.raspberrypi.org/documentation/usage/gpio/)
+
+```
++ => 5v
+- => Ground
+out => Pin 4
+```
+
+## Can We See Some Code Already?
+
+... Absolutely!
+
+The folder structure will be quite simple, and should look like this:
+
+```
+./src
+|__ index.ts
+```
+
+The `index` file will look like this:
+
+```ts title="index.ts"
+import { promises as sensor } from "node-dht-sensor";
+
+setInterval(async () => {
+  const { temperature, humidity } = await sensor.read(11, 4);
+  console.log(`temp: ${temperature}°C, humidity: ${humidity}%`);
+}, 1000);
+```
+
+You tell the `read` function that you are using a `DHT11` sensor by saying `read(11`. The `read` function will then read the RPi boards `pin 4`, which is what you hooked your sensor up to. Every 1000ms, it will read from the sensor and output the results.
+
+Great, now how do you start this up?
+
+For fast iteration, I've added `nodemon` and `ts-node` to this project. But if you look back at the `package.json` you'll notice one other prefix before our startup command.
+
+```
+NODE_OPTIONS=--max_old_space_size=1000
+```
+
+[Max old space size](https://nodejs.org/api/cli.html#cli_max_old_space_size_size_in_megabytes) is a node option we can pass that tells node how much memory it can afford to take up. This command is written in megabytes. From their documentation:
+
+> On a machine with 2GB of memory, consider setting this to 1536 (1.5GB) to leave some memory for other uses and avoid swapping.
+
+On my machine, I have 1GB of memory, so I set it to 1000. If I was doing anything other than running this node project, I would set that a little lower just to give the RPi some room to breathe. If Node is left to its own devices, it can be a huge memory hog!
+
+The rest of the command looks like this:
+
+```bash
+TS_NODE_FILES=src/* nodemon src/index.ts -e ts
+```
+
+A few things are going on here:
+
+- you're telling `ts-node` where it can find your files
+- you're giving `nodemon` an entry point into your app (`src/index.ts`)
+- you're telling `nodemon` to exec `ts`, invoking `ts-node`
+
+Once you've added this to your `scripts` in your `package.json` file, you can now run `yarn start` in your `ssh` terminal connected to your RPi.
+
+Finally, you get to see some code run!
+
+Once you've run `yarn start`, you should see your terminal start to output the following:
+
+```
+temperature: 20°C, humidity: 39%
+```
+
+(You may run into an issue where your script doesn't have permissions to read from GPIO. You can run `sudo yarn start`, or you can [do it the safe way with user permissions](https://www.raspberrypi.org/forums/viewtopic.php?t=5185#p161013)
+
+Your values will vary of course, unless your house is set to the same temp and have the same humidity 😄.
+
+🎉 Yay you did it! Now it is time to measure!
+
+# Grafana
+
+Having set up InfluxDB and the Grafana UI, I can tell you're itching to get some visualizations built. Wait no longer!
+
+In order to start streaming data points to your InfluxDB you can utilize the `influx` package you installed earlier.
+
+You'll adjust your code in the `./src/index.ts` file to look like so:
+
+```ts title="index.ts"
+import { InfluxDB, FieldType } from "influx";
+import { promises as sensor } from "node-dht-sensor";
+
+const pass = process.env.IN_PASS;
+const influx = new InfluxDB({
+  host: "localhost",
+  username: "grafana",
+  password: pass,
+  database: "home",
+  schema: [
+    {
+      measurement: "response_times",
+      fields: {
+        path: FieldType.STRING,
+        duration: FieldType.INTEGER,
+      },
+      tags: ["sensor"],
+    },
+  ],
+});
+
+setInterval(async () => {
+  const { temperature, humidity } = await sensor.read(11, 4);
+  console.log(`temperature: ${temperature}°C, humidity: ${humidity}%`);
+
+  try {
+    influx.writePoints([
+      {
+        measurement: "humidity",
+        tags: { sensor: "humidity" },
+        fields: { humidity },
+      },
+      {
+        measurement: "temp",
+        tags: { sensor: "temperature" },
+        fields: { temperature },
+      },
+    ]);
+  } catch (e) {
+    console.log(e);
+  }
+}, 1000);
+```
+
+There are a few new things here. I'll walk through them quickly:
+
+- First you initialize an instance of `InfluxDB` in your app.
+- The configuration you pass that instance, is what will allow you to connect to the locally running db (You'll see `process.env.IN_PASS`, this is an env var exported with the password set to your db user `grafana`. It is always good practice to keep your credentials out of your scripts... even if it is your own code 😄)
+- In your `setInterval` you've added an `influx.writePoints` this is where the magic happens. Once every `1000`ms it will send influx data points tagged with its respective value.
+
+Now that you've got data streaming to InfluxDB you can head over to Grafana. In Grafana you'll want to create a new dashboard. Once you've done that, you'll create a new panel. Inside of that panel, it will allow you to start writing (or selecting) a query to Influx. If you've set up your DB with all the same names as the tutorial outlined, your query should look something like this:
+
+```
+SELECT mean("humidity") FROM "humidity" WHERE $timeFilter GROUP BY time($__interval) fill(null)
+```
+
+<InlineBlogImage
+  size={800}
+  src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/9rd3zncwz0tie43ckzh3.png"
+  altText="Influx DB Query"
+/>
+
+And there you go! You've got data visualizations in Grafana with data from InfluxDB all streaming from our Node "server" written in TypeScript!
+
+<InlineBlogImage
+  size={800}
+  src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/dr99q35cirgx6u1gt350.png"
+  altText="Newly Updated Grafana Dashboard"
+/>
+
+---
+
+From here, the possibilities are endless. You can start integrating with smart home api's to control switches, or send yourself alerts when humidity levels drop to low.
+
+If you've stayed with me through this whole process, thank you! I hope you've enjoyed it, and had a little fun along the way. I certainly did 😄.

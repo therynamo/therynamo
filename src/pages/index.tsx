@@ -1,40 +1,30 @@
 import React from "react";
-import clsx from "clsx";
-import Link from "@docusaurus/Link";
-import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
-import HomepageFeatures from "@site/src/components/HomepageFeatures";
 
 import styles from "./index.module.css";
 
-function HomepageHeader() {
-  const { siteConfig } = useDocusaurusContext();
-  return (
-    <header className={clsx("hero hero--primary", styles.heroBanner)}>
-      <div className="container">
-        <h1 className="hero__title">{siteConfig.title}</h1>
-        <p className="hero__subtitle">{siteConfig.tagline}</p>
-        <div className={styles.buttons}>
-          <Link
-            className="button button--secondary button--lg"
-            to="/docs/intro"
-          >
-            Find out more 👨‍💻
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-export default function Home(): JSX.Element {
-  const { siteConfig } = useDocusaurusContext();
+export default function Home() {
   return (
     <Layout description="Information about me - therynamo!">
-      <HomepageHeader />
-      <main>
-        <HomepageFeatures />
-      </main>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          flexDirection: "column",
+          padding: "12px",
+        }}
+      >
+        <div>
+          <h1 className={styles.name}>Theryn</h1>
+          <p className={styles.labels}>Dad</p>
+          <p className={styles.labels}>Software Engineer</p>
+          <p className={styles.labels}>Aspiring Horticulturist</p>
+        </div>
+        <div>
+          <p className={styles.intro}>Hey. I do things!</p>
+        </div>
+      </div>
     </Layout>
   );
 }
