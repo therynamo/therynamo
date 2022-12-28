@@ -6,9 +6,9 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'therynamo.dev',
+  title: 'therynamo.me',
   tagline: '',
-  url: 'https://therynamo.dev',
+  url: 'https://therynamo.me',
   baseUrl: '/',
   onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
@@ -59,7 +59,7 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       navbar: {
-        title: 'therynamo.dev',
+        title: 'therynamo.me',
         logo: {
           alt: 'My Site Logo',
           src: 'img/logo.svg',
